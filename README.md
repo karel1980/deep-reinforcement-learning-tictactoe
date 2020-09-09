@@ -7,4 +7,4 @@ This project contains 2 components:
 
 TODO:
 
- - Figure out why agents are not learning about valid moves & figure out why the 2nd agent always wins
+ - Figure out why agents are not learning about valid moves & figure out why the 2nd agent makes less invalid moves (initialisation dependent?)

@@ -51,6 +51,7 @@ class TicTacToeEnv(gym.Env):
         self.moves += 1
         if self.moves == 9:
             # Stop when board is full
+            print("It's a  draw")
             info = {'state': 'draw'}
             reward = DRAW_REWARD
             self.done = True
