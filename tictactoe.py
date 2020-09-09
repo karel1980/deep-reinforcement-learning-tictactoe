@@ -94,10 +94,10 @@ class TicTacToeEnv(gym.Env):
         return None
     
     def render(self, mode="human"):
-        board = [ ' ' if cell is None else cell for cell in self.board ]
-        print ("%d %d %d"%board[:3])
-        print ("%d %d %d"%board[3:6])
-        print ("%d %d %d"%board[6:9])
+        board = [ '-' if cell is None else cell for cell in self.board ]
+        print ("%s %s %s"%tuple(board[:3]))
+        print ("%s %s %s"%tuple(board[3:6]))
+        print ("%s %s %s"%tuple(board[6:9]))
         
     def _one_hot_board(self):
         onehot = np.zeros(3*9)
