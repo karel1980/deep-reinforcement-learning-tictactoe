@@ -8,6 +8,14 @@ register(
     entry_point='tictactoe:TicTacToeEnv',
 )
 
+INVALID_MOVE_REWARD = -3
+WINNING_MOVE_REWARD = 1
+# We already give a negative reward for invalid moves. I don't think rewarding for valid moves is useful.
+VALID_MOVE_REWARD = 0
+# Note: only the odd player can get draw reward, so we should probably keep it 0
+DRAW_REWARD = 0
+
+
 class TicTacToeEnv(gym.Env):
     reward_range = (-np.inf, np.inf)
     observation_space = spaces.MultiDiscrete([2 for _ in range(0, 3*3*3)])
@@ -34,8 +42,7 @@ class TicTacToeEnv(gym.Env):
         reward = 0
 
         if self.board[action] != None:
-            # Making an illegal move is Very Bad (TM). -10 points, instant loss
-            reward = -10
+            reward = INVALID_MOVE_REWARD
             info = {"state": "done", "reason": "Illegal move"}
             self.done = True
             return self._one_hot_board(), reward, self.done, info
@@ -44,26 +51,24 @@ class TicTacToeEnv(gym.Env):
         self.moves += 1
         if self.moves == 9:
             # Stop when board is full
+            info = {'state': 'draw'}
+            reward = DRAW_REWARD
             self.done = True
         
         winner = self.get_winner()
-        #if  winner is  not  None:
-        #    print("winner", winner)
-        #    print("current", self.current_player
         if winner is None:
             # keep playing
-            reward = 0
+            reward = VALID_MOVE_REWARD
+            self.current_player = 1 - self.current_player
         elif winner == self.current_player:
             # Big reward for winning the game
-            reward = 10
+            reward = WINNING_MOVE_REWARD
             self.done = True
             info = {'state':'winner winner chicken dinner'}
         elif winner != self.current_player:
             # We shouldn't get here because you only get to become a winner in your own round
             self.done = True
             raise Exception("Illegal state: opponent won?")
-
-        self.current_player = 1 - self.current_player
 
         return self._one_hot_board(), reward, self.done, info
     
