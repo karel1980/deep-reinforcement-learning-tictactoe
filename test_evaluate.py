@@ -74,9 +74,11 @@ def test_evaluate_n_games():
     assert num_player1_wins + num_player2_wins + num_draws == 20
     assert 20 * 2 < num_moves <= 20 * 9
 
-    # assert that the model is fully trained
-    # if these fail you need to run train.py for a while
+    # assert that the model is playing optimally (i.e. all games end in draws, no wins or losses)
+    # if these fail you need to run train.py for a bit more
     assert num_draws == 20
+    assert num_player1_wins == 0
+    assert num_player2_wins == 0
     assert num_moves == 180
 
 
