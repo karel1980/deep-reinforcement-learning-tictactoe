@@ -1,5 +1,6 @@
 from game import *
-from train import TrainParams
+from test_evaluate import DeterministicPlayer
+from train import TrainParams, play_and_train_iterations, play_and_train
 
 MAXIMUM_VALID_STEPS_IN_GAME = 12
 
@@ -35,7 +36,7 @@ def test_format_board():
 
     board = format_board(env.last()[0]['observation'])
 
-    assert board == "___\n_X_\n___\n"
+    assert board == "___\n_O_\n___\n"
 
 
 def test_random_player():
@@ -54,20 +55,94 @@ def test_random_player_action():
     action = player.get_action(env)
     env.step(action)
 
-    board = format_board(env.last()[0]['observation'])
+    board = format_board(env.last()[0]['observation'], 1)
     assert "X" in board
 
 
-def test_create_memory():
+def test_record_game_episodes_win():
     env = create_env()
-    player1 = RandomPlayer('random1', env.action_space(env.agents[0]))
-    player2 = RandomPlayer('random2', env.action_space(env.agents[1]))
+    player1 = DeterministicPlayer([0, 1, 2])
+    player2 = DeterministicPlayer([3, 4])
     players = [player1, player2]
 
     episodes = record_game_episodes(env, players, 1, 0)
 
     assert len(episodes) == 1
     assert MINIMUM_VALID_STEPS_IN_GAME <= len(episodes[0][0]) < MAXIMUM_VALID_STEPS_IN_GAME
+
+
+def test_record_game_episodes_draw():
+    env = create_env()
+    player1 = DeterministicPlayer([0, 2, 4, 5, 7])
+    player2 = DeterministicPlayer([1, 3, 6, 8])
+    players = [player1, player2]
+
+    episodes = record_game_episodes(env, players, 1, 0)
+
+    assert len(episodes) == 1
+    assert format_board(episodes[0][0][0]['observation'], 0) == "___\n___\n___\n"
+    assert format_board(episodes[0][0][1]['observation'], 1) == "X__\n___\n___\n"
+    assert format_board(episodes[0][0][2]['observation'], 0) == "XO_\n___\n___\n"
+    assert format_board(episodes[0][0][3]['observation'], 1) == "XOX\n___\n___\n"
+    assert format_board(episodes[0][0][4]['observation'], 0) == "XOX\nO__\n___\n"
+    assert format_board(episodes[0][0][5]['observation'], 1) == "XOX\nOX_\n___\n"
+    assert format_board(episodes[0][0][6]['observation'], 0) == "XOX\nOX_\nO__\n"
+    assert format_board(episodes[0][0][7]['observation'], 1) == "XOX\nOXX\nO__\n"
+    assert format_board(episodes[0][0][8]['observation'], 0) == "XOX\nOXX\nO_O\n"
+    assert format_board(episodes[0][0][9]['observation'], 1) == "XOX\nOXX\nOXO\n"
+    assert format_board(episodes[0][0][10]['observation'], 0) == "XOX\nOXX\nOXO\n"
+    assert len(episodes[0][0]) == 11
+
+
+def test_convert_episodes_to_memory_win():
+    env = create_env()
+    player1 = DeterministicPlayer([0, 1, 2])
+    player2 = DeterministicPlayer([3, 4, 6])
+    players = [player1, player2]
+
+    episodes = record_game_episodes(env, players, 1, 0)
+    memory = convert_episodes_to_memory(episodes)
+
+    assert len(memory) == 5
+    assert MINIMUM_VALID_STEPS_IN_GAME <= len(episodes[0][0]) < MAXIMUM_VALID_STEPS_IN_GAME
+    # agent learns
+    validate_memory(memory[0], "___\n___\n___\n", 0, 0, "X__\n___\n___\n", 0)
+    validate_memory(memory[1], "X__\n___\n___\n", 3, 0, "X__\nO__\n___\n", 1)
+    validate_memory(memory[2], "X__\nO__\n___\n", 1, 0, "XX_\nO__\n___\n", 0)
+    validate_memory(memory[3], "XX_\nO__\n___\n", 4, -1, "XX_\nOO_\n___\n", 1)
+    validate_memory(memory[4], "XX_\nOO_\n___\n", 2, 1, "XXX\nOO_\n___\n", 0)
+    assert len(memory) == 5
+
+
+def test_convert_episodes_to_memory_draw():
+    env = create_env()
+    player1 = DeterministicPlayer([0, 2, 4, 5, 7])
+    player2 = DeterministicPlayer([1, 3, 6, 8])
+    players = [player1, player2]
+
+    episodes = record_game_episodes(env, players, 1, 0)
+    memory = convert_episodes_to_memory(episodes)
+
+    assert len(episodes) == 1
+    assert MINIMUM_VALID_STEPS_IN_GAME <= len(episodes[0][0]) < MAXIMUM_VALID_STEPS_IN_GAME
+    # agent learns
+    validate_memory(memory[0], "___\n___\n___\n", 0, 0, "X__\n___\n___\n", 0)
+    validate_memory(memory[1], "X__\n___\n___\n", 1, 0, "XO_\n___\n___\n", 1)
+    validate_memory(memory[2], "XO_\n___\n___\n", 2, 0, "XOX\n___\n___\n", 0)
+    validate_memory(memory[3], "XOX\n___\n___\n", 3, 0, "XOX\nO__\n___\n", 1)
+    validate_memory(memory[4], "XOX\nO__\n___\n", 4, 0, "XOX\nOX_\n___\n", 0)
+    validate_memory(memory[5], "XOX\nOX_\n___\n", 6, 0, "XOX\nOX_\nO__\n", 1)
+    validate_memory(memory[6], "XOX\nOX_\nO__\n", 5, 0, "XOX\nOXX\nO__\n", 0)
+    validate_memory(memory[7], "XOX\nOXX\nO__\n", 8, 0, "XOX\nOXX\nO_O\n", 1)
+    validate_memory(memory[8], "XOX\nOXX\nO_O\n", 7, 0, "XOX\nOXX\nOXO\n", 0)
+    assert len(memory) == 9
+
+
+def validate_memory(entry, state, action, reward, next_state, x_player=0):
+    assert format_board(entry[0], x_player) == state
+    assert entry[1] == action
+    assert entry[2] == reward
+    assert format_board(entry[3], x_player) == next_state
 
 
 def test_create_memory_one_hundred():

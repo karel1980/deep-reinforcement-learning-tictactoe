@@ -82,7 +82,6 @@ def test_evaluate_n_games():
     assert num_moves == 180
 
 
-
 class DeterministicPlayer:
     def __init__(self, moves):
         self.moves = moves

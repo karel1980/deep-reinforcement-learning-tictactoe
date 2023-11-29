@@ -3,6 +3,7 @@
 
 import numpy as np
 from pettingzoo.classic import tictactoe_v3
+import tensorflow as tf
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 
@@ -31,18 +32,18 @@ def print_env(env, agent):
     print_board(env.last()[0]['observation'])
 
 
-def print_board(board, agent='player_1'):
-    print(format_board(board, agent))
+def print_board(board):
+    print(format_board(board))
 
 
-def format_board(board, agent='player_1'):
+def format_board(board, x_player=0):
     result = ""
     for i in range(3):
         for j in range(3):
             sign = "_"
-            if board[i][j][1 if agent == 'player_1' else 0] == 1:
+            if board[i][j][x_player] == 1:
                 sign = "X"
-            if board[i][j][0 if agent == 'player_1' else 1] == 1:
+            if board[i][j][1 - x_player] == 1:
                 sign = "O"
             result += sign
         result += "\n"
@@ -118,17 +119,21 @@ def convert_episodes_to_memory(episodes):
     # first store the events for agent 1
     for episode in episodes:
         observations, rewards, actions = episode
-        for i in range(0, len(observations) - 2):
-            state = observations[i]['observation']
+        for i in range(0, len(observations) - 1):
             action = actions[i]
+            if action is None:
+                continue
+            state = observations[i]['observation']
+            # print(format_board(state))
             reward = rewards[i + 2]
-            next_state = observations[i + 2]['observation']
-            # print("S,A,N", state, action, next_state)
+            next_state = np.copy(state)
+            next_state[action // 3][action % 3][0] = 1
+            # print("S,A,R,N", state, action, reward, next_state)
             memory.append((state, action, reward, next_state))
     return memory
 
 
-def train_on_memory(model, memory, num_epochs=10, batch_size=10):
+def train_on_memory(model, memory, num_epochs=10, batch_size=10, verbose = False):
     states = []
     targets = []
 
@@ -156,25 +161,9 @@ def train_on_memory(model, memory, num_epochs=10, batch_size=10):
 
     x = np.array(states)
     y = np.array(targets)
-    model.fit(x, y, epochs=num_epochs, batch_size=batch_size, verbose=False)
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="tblogs", histogram_freq=1)
+    model.fit(x, y, epochs=num_epochs, batch_size=batch_size, verbose=verbose, callbacks=[tensorboard_callback])
 
-
-# TODO: epsilon should probably better be a property of ModelAgent. We can even control the epsilon decay from there
-def play_and_train(model, players, env, num_games=10, num_epochs=10, batch_size=10, epsilon=0):
-    episodes = record_game_episodes(env, players, num_games, epsilon)
-    memory = convert_episodes_to_memory(episodes)
-    train_on_memory(model, memory, num_epochs, batch_size)
-
-
-def play_and_train_iterations(model, players, env, train_params):
-    for i in range(train_params.num_iterations):
-        epsilon = train_params.epsilon_start + (
-                1.0 * (train_params.epsilon_end - train_params.epsilon_start) * i / train_params.num_iterations)
-        print("iteration %d/%d with epsilon %g" % (i, train_params.num_iterations, epsilon))
-        play_and_train(model, players, env, train_params.num_games, train_params.num_epochs, train_params.batch_size,
-                       epsilon)
-
-        print("TODO: evaluate how many moves against a random client. This should go up as the model learns to make valid moves")
 
 class ModelPlayer:
     def __init__(self, name, model):

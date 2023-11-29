@@ -1,6 +1,8 @@
 # Deep Q learning
 
 This repo is an implementation of a Deep Q learning agent.
+Note: I'm just figuring stuff out as I go, there are probably plenty of mistakes.
+
 It features the following features:
 
 ## train.py

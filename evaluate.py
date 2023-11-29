@@ -24,7 +24,7 @@ def evaluate_single_game(env, players, verbose=False):
         observation, reward, termination, truncation, info = env.last()
 
         if verbose:
-            print_board(observation['observation'], agent)
+            print_board(observation['observation'])
             print("reward", reward)
         current_player = player_map[agent]
         rewards[current_player] += reward
@@ -67,3 +67,5 @@ def evaluate_n_games(env, players, num_games):
             player2_wins += 1
         total_moves += num_moves
     return player1_wins, player2_wins, draws, total_moves
+
+
