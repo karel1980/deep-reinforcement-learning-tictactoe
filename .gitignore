@@ -1,3 +1,5 @@
+.idea/
 __pycache__/
 tictactoe-params/
 venv/
+tblogs/
